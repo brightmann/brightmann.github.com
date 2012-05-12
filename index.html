@@ -10,10 +10,12 @@ page_name: blog
         <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
         {{ post.content }}
 
-    <!-- <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+    <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+<h3 class="excerpt"><a href="{{ post.url }}">{{ post.title }}</a></h3>
     <p class="excerpt">
-        {{ post.content | strip_html | truncatewords:100 }} &nbsp;  <a href="{{ post.url }}" class='read-more'>Read more</a>
-    </p> -->
+{{ post.content | strip_html | truncatewords: 0 }} &nbsp;  
+<a href="{{ post.url }}" class='read-more'>Read more</a>
+    </p>
     <small class="meta">{{ post.date | date:"%B %d, %Y" }} | <a href='{{ post.url }}#disqus_thread'>View Comments</a> 
       {% for t in post.tags %}
         {% if forloop.first == true %} | {% endif %}
