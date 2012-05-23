@@ -1,0 +1,6 @@
+---
+layout: post
+title: nano is the best editor
+category: misc
+---
+还是nano更好用，比vim和emacs都要省事
