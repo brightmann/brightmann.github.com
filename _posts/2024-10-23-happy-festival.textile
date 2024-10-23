@@ -1,0 +1,7 @@
+---
+layout: post
+title: 快乐的节日
+tags: [music]
+---
+
+<iframe width="350" height="200" src="//videa.hu/player?a=dPKRSOb6TAMq1oCW" allowfullscreen="allowfullscreen" webkitallowfullscreen="webkitallowfullscreen" mozallowfullscreen="mozallowfullscreen" frameborder="0"></iframe>
