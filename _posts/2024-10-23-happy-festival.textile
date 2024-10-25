@@ -1,15 +1,8 @@
 ---
 layout: post
 title: 快乐的节日
-<<<<<<< HEAD
 tags: [music]
 ---
 
 <iframe width="350" height="200" src="//videa.hu/player?a=dPKRSOb6TAMq1oCW" allowfullscreen="allowfullscreen" webkitallowfullscreen="webkitallowfullscreen" mozallowfullscreen="mozallowfullscreen" frameborder="0"></iframe>
-=======
-category: misc
----
 
-<iframe width="350" height="200" src="//videa.hu/player?a=dPKRSOb6TAMq1oCW" allowfullscreen="allowfullscreen" webkitallowfullscreen="webkitallowfullscreen" mozallowfullscreen="mozallowfullscreen" frameborder="0"></iframe>
-
->>>>>>> d7b77eff0a187e71570aaf993f66c4553e835bfb
