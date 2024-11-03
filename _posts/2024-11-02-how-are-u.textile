@@ -1,0 +1,8 @@
+---
+layout: post
+title: 你还好吗
+date: 2024-11-02T17:22:00
+tags: [life]
+---
+
+hi.how is everything?
