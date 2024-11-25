@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : DSLs FTW! </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>DSLs FTW!</h2>
+    I love programming in Ruby. It's amazing how powerful and expressive the language can be. One of the best parts about Ruby is how easy it is to whip up a DSL (Domain Specific Language) to help clean up you code and hopefully make it more enjoyable (readable, understandable) to work with. I recently had the chance to cleanup some messy, hard to understand code with a really simple and easy to understand DSL and I thought it might be useful to share the basics doing something like this.
+
+h3. What We're Working With
+
+For this example lets say you're writing some code that builds an html page. Lets say you have a class for each html element and a page is made up of a heiarchy of these html elements. The code to build a simple page might look something like this:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">page</span> <span class="o">=</span> <span class="no">HTMLPage</span><span class="p">.</span><span class="nf">new</span>
+
+<span class="n">form</span> <span class="o">=</span> <span class="no">FormElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:id</span><span class="o">=&gt;</span><span class="s2">"new-user"</span><span class="p">,</span> <span class="ss">:action</span><span class="o">=&gt;</span><span class="s2">"/user/new"</span><span class="p">,</span> 
+  <span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">page</span><span class="p">)</span>
+<span class="n">wrapper</span> <span class="o">=</span> <span class="no">DivElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:class</span><span class="o">=&gt;</span><span class="s2">"wrapper"</span><span class="p">,</span> <span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">form</span><span class="p">)</span>
+
+<span class="no">LabelElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Name"</span><span class="p">,</span> <span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">wrapper</span><span class="p">)</span>
+<span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:name</span><span class="o">=&gt;</span><span class="s2">"name"</span><span class="p">,</span> <span class="ss">:type</span><span class="o">=&gt;</span><span class="s2">"text"</span><span class="p">,</span> <span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">wrapper</span><span class="p">)</span>
+
+<span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Save"</span><span class="p">,</span> <span class="ss">:type</span><span class="o">=&gt;</span><span class="s2">"submit"</span><span class="p">,</span> <span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">form</span><span class="p">)</span></code></pre></figure>
+
+Okay, so you might not actually do something like this in reality but if you did and you were defining a bunch of pages and wanted to adjust each of them it would probably get confusing really fast. Even this simple example is a little hard to read as is...the Input is in the Form? Oh ya, it's in the wrapper Div which is inside the Form. Confusing!
+
+h3. What will the DSL Look Like?
+
+When I'm looking at some ugly code that I want to clean up I like to step back a little and write some code the way I want it to look and then work on making my DSL or whatever work towards that goal.
+
+I would much rather be writing the stuff about in a way that looks something like this:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">page</span> <span class="k">do</span>
+  <span class="n">form</span> <span class="s2">"/user/new"</span><span class="p">,</span> <span class="ss">:id</span><span class="o">=&gt;</span><span class="s2">"new-user"</span> <span class="k">do</span>
+    <span class="n">div</span> <span class="ss">:class</span><span class="o">=&gt;</span><span class="s2">"wrapper"</span> <span class="k">do</span>
+      <span class="n">label</span> <span class="s2">"Name"</span>
+      <span class="n">input</span> <span class="s2">"text"</span><span class="p">,</span> <span class="ss">:name</span><span class="o">=&gt;</span><span class="s2">"name"</span>
+    <span class="k">end</span>
+
+    <span class="n">input</span> <span class="s2">"submit"</span><span class="p">,</span> <span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Save"</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+To me something like that is a lot easier to follow, especially with something hierarchical like html or xml.
+
+So that's all well and good, but this looks pretty different than the code we had earlier, it might be a lot of work to build something to do this. Is it really work all that effort just so our code looks a little better? In all honesty it depends on the situation. If you have code like this on one little spot it might not be worth the effort. But writting a lot of unclear code all over the place then replacing it with a readable DSL will gain you many High Fives from future developers. Besides, it really isn't that much work and DSLs are too cool to pass up, so lets get to it.
+
+h3. Building the DSL
+
+Lets start out with something simple that will just define and return a couple of our elements.
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="no">HTMLPage</span><span class="p">.</span><span class="nf">new</span>
+    <span class="k">yield</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">form</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">form</span> <span class="o">=</span> <span class="no">FormElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="k">yield</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">div</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">div</span> <span class="o">=</span> <span class="no">DivElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="k">yield</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">label</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="no">LabelElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+This little bit of code gives us the main structure of our DSL. It doesn't quit work yet since there's no way to set the parent attribute on each of the elements. Lets take care of that.
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="vi">@current</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="no">HTMLPage</span><span class="p">.</span><span class="nf">new</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">page</span>
+    <span class="k">yield</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">last</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">form</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="vi">@current</span>
+    <span class="n">form</span> <span class="o">=</span> <span class="no">FormElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">form</span>
+    <span class="k">yield</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">last</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">div</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="vi">@current</span>
+    <span class="n">div</span> <span class="o">=</span> <span class="no">DivElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">div</span>
+    <span class="k">yield</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">last</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">label</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+    <span class="no">LabelElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+Okay, wo what I'm doing here is just keeping track of whatever the current container element is and setting it to @current so that the elements being defined within the block can set it's parent attribute. Lets take a look at what using our DSL might look like so far:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">page</span> <span class="k">do</span>
+  <span class="n">form</span> <span class="ss">:action</span><span class="o">=&gt;</span><span class="s2">"/user/new"</span><span class="p">,</span> <span class="ss">:id</span><span class="o">=&gt;</span><span class="s2">"new-user"</span> <span class="k">do</span>
+    <span class="n">div</span> <span class="ss">:class</span><span class="o">=&gt;</span><span class="s2">"wrapper"</span> <span class="k">do</span>
+      <span class="n">label</span> <span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Name"</span>
+      <span class="n">input</span> <span class="ss">:type</span><span class="o">=&gt;</span><span class="s2">"text"</span><span class="p">,</span> <span class="ss">:name</span><span class="o">=&gt;</span><span class="s2">"name"</span>
+    <span class="k">end</span>
+
+    <span class="n">input</span> <span class="ss">:type</span><span class="o">=&gt;</span><span class="s2">"submit"</span><span class="p">,</span> <span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Save"</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+That looks pretty close now! I have to be honest though, I cheated and made a little change so that this would be possible:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+  <span class="no">HTMLPageDSL</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">HTMLPage</span><span class="p">.</span><span class="nf">new</span><span class="p">).</span><span class="nf">instance_eval</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">current</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+So I moved the page method outside of our DSL class and made it create an instance of HTMLPageDSL. We then call instance_eval giving the HTMLPageDSL object the block to evaluate.
+
+The last thing I want to do is add a bit of syntax magic so we don't have to type quite as much. At the moment we're passing all the attributes as a hash, but in my initial example I could pass some options directly, without a hash.
+
+First we add the following methods to HTMLPageDSL
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="kp">private</span>
+    <span class="k">def</span> <span class="nf">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="kp">nil</span><span class="p">)</span>
+      <span class="n">options</span> <span class="o">=</span> <span class="n">extract_options!</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+      <span class="n">keys</span><span class="p">.</span><span class="nf">each_with_index</span> <span class="k">do</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span> <span class="n">index</span><span class="o">|</span>
+        <span class="n">options</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">k</span><span class="p">.</span><span class="nf">to_sym</span><span class="o">=&gt;</span><span class="n">args</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+      <span class="k">end</span>
+      <span class="n">current</span> <span class="p">?</span> <span class="p">{</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">current</span><span class="p">}.</span><span class="nf">merge</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="p">:</span> <span class="n">options</span>
+    <span class="k">end</span>
+
+    <span class="c1"># From Rails ActiveSupport</span>
+    <span class="k">def</span> <span class="nf">extract_options!</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+      <span class="n">args</span><span class="p">.</span><span class="nf">last</span><span class="p">.</span><span class="nf">is_a?</span><span class="p">(</span><span class="o">::</span><span class="no">Hash</span><span class="p">)</span> <span class="p">?</span> <span class="n">args</span><span class="p">.</span><span class="nf">pop</span> <span class="p">:</span> <span class="p">{}</span>
+    <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+After that we can use it in our DSL methods to let us pass array arguments or a hash to the method call.
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="sx">%w(type)</span><span class="p">,</span> <span class="vi">@current</span><span class="p">)</span>
+    <span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+And that's it. Now we can pass the type as the first argument to the call to input and any other options as a hash, or everything as a hash if we want.
+
+h3. Conclusion
+
+So there we have it, a nice simple example of creating a DSL. This example isn't perfect, that's for sure, but it does show how to get started and how simple it can be.
+
+Full Example Code:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+  <span class="no">HTMLPageDSL</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">HTMLPage</span><span class="p">.</span><span class="nf">new</span><span class="p">).</span><span class="nf">instance_eval</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">HTMLPageDSL</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">current</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">form</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="sx">%w(action)</span><span class="p">,</span> <span class="vi">@current</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="vi">@current</span>
+    <span class="n">form</span> <span class="o">=</span> <span class="no">FormElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">form</span>
+    <span class="k">yield</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">last</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">div</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="vi">@current</span>
+    <span class="n">div</span> <span class="o">=</span> <span class="no">DivElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">div</span>
+    <span class="k">yield</span>
+    <span class="vi">@current</span> <span class="o">=</span> <span class="n">last</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="sx">%w(type)</span><span class="p">,</span> <span class="vi">@current</span><span class="p">)</span>
+    <span class="no">InputElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">label</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="sx">%w(text)</span><span class="p">,</span> <span class="vi">@current</span><span class="p">)</span>
+    <span class="no">LabelElement</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="vi">@current</span><span class="p">))</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span>
+    <span class="k">def</span> <span class="nf">setup_options</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="kp">nil</span><span class="p">)</span>
+      <span class="n">options</span> <span class="o">=</span> <span class="n">extract_options!</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+      <span class="n">keys</span><span class="p">.</span><span class="nf">each_with_index</span> <span class="k">do</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span> <span class="n">index</span><span class="o">|</span>
+        <span class="n">options</span><span class="p">.</span><span class="nf">merge!</span><span class="p">(</span><span class="n">k</span><span class="p">.</span><span class="nf">to_sym</span><span class="o">=&gt;</span><span class="n">args</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+      <span class="k">end</span>
+      <span class="n">current</span> <span class="p">?</span> <span class="p">{</span><span class="ss">:parent</span><span class="o">=&gt;</span><span class="n">current</span><span class="p">}.</span><span class="nf">merge</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="p">:</span> <span class="n">options</span>
+    <span class="k">end</span>
+
+    <span class="c1"># From Rails ActiveSupport</span>
+    <span class="k">def</span> <span class="nf">extract_options!</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+      <span class="n">args</span><span class="p">.</span><span class="nf">last</span><span class="p">.</span><span class="nf">is_a?</span><span class="p">(</span><span class="o">::</span><span class="no">Hash</span><span class="p">)</span> <span class="p">?</span> <span class="n">args</span><span class="p">.</span><span class="nf">pop</span> <span class="p">:</span> <span class="p">{}</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="c1"># These classes added for completness so the example will run</span>
+<span class="k">class</span> <span class="nc">HTMLPage</span>
+  <span class="nb">attr_accessor</span> <span class="ss">:children</span>
+  <span class="k">def</span> <span class="nf">initialize</span>
+    <span class="vi">@children</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">HTMLElement</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{})</span>
+    <span class="vi">@options</span> <span class="o">=</span> <span class="n">options</span>
+    <span class="n">options</span><span class="p">[</span><span class="ss">:parent</span><span class="p">].</span><span class="nf">children</span> <span class="o">&lt;&lt;</span> <span class="nb">self</span> <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="ss">:parent</span><span class="p">]</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">FormElement</span> <span class="o">&lt;</span> <span class="no">HTMLElement</span>
+  <span class="nb">attr_accessor</span> <span class="ss">:children</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{})</span>
+    <span class="vi">@children</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">super</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+<span class="k">class</span> <span class="nc">DivElement</span> <span class="o">&lt;</span> <span class="no">HTMLElement</span>
+  <span class="nb">attr_accessor</span> <span class="ss">:children</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{})</span>
+    <span class="vi">@children</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">super</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+<span class="k">class</span> <span class="nc">InputElement</span> <span class="o">&lt;</span> <span class="no">HTMLElement</span><span class="p">;</span> <span class="k">end</span>
+<span class="k">class</span> <span class="nc">LabelElement</span> <span class="o">&lt;</span> <span class="no">HTMLElement</span><span class="p">;</span> <span class="k">end</span>
+
+<span class="c1"># Example Usage</span>
+<span class="nb">p</span> <span class="o">=</span> <span class="n">page</span> <span class="k">do</span>
+  <span class="n">form</span> <span class="s2">"/user/new"</span><span class="p">,</span> <span class="ss">:id</span><span class="o">=&gt;</span><span class="s2">"new-user"</span> <span class="k">do</span>
+    <span class="n">div</span> <span class="ss">:class</span><span class="o">=&gt;</span><span class="s2">"wrapper"</span> <span class="k">do</span>
+      <span class="n">label</span> <span class="s2">"Name"</span>
+      <span class="n">input</span> <span class="s2">"text"</span><span class="p">,</span> <span class="ss">:name</span><span class="o">=&gt;</span><span class="s2">"name"</span>
+    <span class="k">end</span>
+
+    <span class="n">input</span> <span class="s2">"submit"</span><span class="p">,</span> <span class="ss">:text</span><span class="o">=&gt;</span><span class="s2">"Save"</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre></figure>
+
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">May 30, 2010 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#ruby'>ruby</a>, 
+  
+  
+  <a href='/tags#dsl'>dsl</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

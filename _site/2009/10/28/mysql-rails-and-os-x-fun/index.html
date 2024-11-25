@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : mySQL, Rails and OS X Fun </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>mySQL, Rails and OS X Fun</h2>
+    In the last little while I started working on a Rails project that had been targeting an older version of mySQL. I ran into a few confusing problems while getting started so I thought I'd bring together all the various mySQL and Rails related info I came across to fix my problems into one place.
+
+h3. Problem: ActiveRecord failing with a default field value of blank
+
+This is a problem that a few people have posted on "ruby-forum":http://www.ruby-forum.com/topic/197243 without getting much of a response, but what is there pointed me in the right direction. The main problem is that older versions of mySQL (pre 5.0.45 I believe) treat a NULL value inserted into a string column as a blank string. Newer versions of mySQL fix this issue but this fix causes some confusing behaviour.
+
+What happens in the older version is maybe you forget to pass a value for that NOT NULL string; mySQL happily treats that as a blank string and gives you no errors. When you upgrade mySQL to a version that 'fixes' this you end up with all kinds of errors because the constraint isn't being met anymore.
+
+h4. Solution
+
+Well, if you don't actually need the constraint remove it, otherwise explicitly send a value so the constraint is met. Update your tests and validations so you're passing and checking that the correct values are being passed.
+
+h3. Problem: Error: uninitialized constant MysqlCompat::MysqlRes
+
+Another one that also shows up on a "ruby forum post":http://www.ruby-forum.com/topic/192550. The root of this problem is that on OS X the mysql gem has to be told where the installed mySQL libraries are and which architecture your machine is.
+
+h4. Solution
+
+I found the solution "here":http://wonko.com/post/how-to-install-the-mysqlruby-gem-on-mac-os-x-leopard but had to modify the gem install slightly for my 64 bit machine.
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">  <span class="nb">sudo env </span><span class="nv">ARCHFLAGS</span><span class="o">=</span><span class="s2">"-arch x86_64"</span> gem <span class="nb">install </span>mysql <span class="nt">--</span> <span class="se">\</span>
+    <span class="nt">--with-mysql-dir</span><span class="o">=</span>/usr/local/mysql <span class="nt">--with-mysql-lib</span><span class="o">=</span>/usr/local/mysql/lib <span class="se">\</span>
+    <span class="nt">--with-mysql-include</span><span class="o">=</span>/usr/local/mysql/include
+  </code></pre></figure>
+
+This might be slightly different depending on where mysql ended up on your machine and your machines architecture.
+
+h3. Problem: mySQL can't install because a newer version exists
+
+Or, removing mySQL for real. While dealing with my first problem I tried installing and uninstalling different versions of mySQL along the way the mySQL install got angry because some files weren't removed and wouldn't install the version I wanted.
+
+h4. Solution
+
+I managed to get mySQL off my machine by combining the approaches from a "blog post":http://akrabat.com/2008/09/11/uninstalling-mysql-on-mac-os-x-leopard/ and an answer found on "Stack Overflow":http://stackoverflow.com/questions/1436425/how-do-you-uninstall-mysql-from-mac-os-x/1447758#1447758. Before doing this I did run the mySQL uninstaller, but it seems to leave some goodies behind.
+
+In the end it boiled down to running the following commands:
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">  <span class="nb">sudo rm</span> /usr/local/mysql
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /usr/local/mysql<span class="k">*</span>
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /Library/StartupItems/MySQLCOM
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /Library/PreferencePanes/My<span class="k">*</span>
+  edit /etc/hostconfig and removed the line <span class="nv">MYSQLCOM</span><span class="o">=</span><span class="nt">-YES-</span>
+  <span class="nb">rm</span> <span class="nt">-rf</span> ~/Library/PreferencePanes/My<span class="k">*</span>
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /Library/Receipts/mysql<span class="k">*</span>
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /Library/Receipts/MySQL<span class="k">*</span>
+  <span class="nb">sudo rm</span> <span class="nt">-rf</span> /var/db/receipts/com.mysql.<span class="k">*</span></code></pre></figure>
+
+I know it's a lot of mumbo jumbo, but mySQL seems to hook itself in all over the place and this, in the end, did seem to get rid of everything.
+
+h3. Conclusion
+
+Well, that's all I've got for mySQL right now. It was a pretty frustrating trip, but in the end I managed to find a solution to all the problems and now it's all in one place for all of time.
+
+As a side note I'm really starting to find "Stack Overflow":http://stackoverflow.com to be an incredibly useful resource. Sometimes it might even save time trying a quick search there before hitting up Google.
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">October 28, 2009 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#mysql'>mysql</a>, 
+  
+  
+  <a href='/tags#ruby'>ruby</a>, 
+  
+  
+  <a href='/tags#rails'>rails</a>, 
+  
+  
+  <a href='/tags#osx'>osx</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

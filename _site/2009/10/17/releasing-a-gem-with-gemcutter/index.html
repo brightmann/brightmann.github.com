@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : Releasing a Gem with Gemcutter </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>Releasing a Gem with Gemcutter</h2>
+    The other day "Jon Maddox":http://github.com/maddox sent me a message on Github to see if I was thinking of putting my gem "tmdb_party":http://github.com/jduff/tmdb_party up on "Gemcutter":http://gemcutter.org/, the new RubyGem host on the block. At the time I hadn't really thought much about doing this thought what the heck? It didn't seem like it was too difficult so I thought I'd put it to the test around midnight on a Saturday night.
+
+Well, I have got to say, this was probably the easiest thing I've ever done. I was going into this thinking it wouldn't be too difficult but I was still impressed with how it went.
+
+# The first step is to sign up for a Gemcutter account "right here":http://gemcutter.org/session/new which takes about 10 seconds.
+# The next step is to update your Jeweler Rakefile to add the Gemcutter task. I've included a sample of what my Rakefile looks like below.
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">begin</span>
+  <span class="nb">require</span> <span class="s1">'jeweler'</span>
+  <span class="no">Jeweler</span><span class="o">::</span><span class="no">Tasks</span><span class="p">.</span><span class="nf">new</span> <span class="k">do</span> <span class="o">|</span><span class="n">gem</span><span class="o">|</span>
+    <span class="n">gem</span><span class="p">.</span><span class="nf">name</span> <span class="o">=</span> <span class="s2">"tmdb_party"</span>
+  <span class="k">end</span>
+  <span class="no">Jeweler</span><span class="o">::</span><span class="no">GemcutterTasks</span><span class="p">.</span><span class="nf">new</span>
+<span class="k">rescue</span> <span class="no">LoadError</span>
+  <span class="nb">puts</span> <span class="s2">"Jeweler not available. Install it: sudo gem install jeweler"</span>
+<span class="k">end</span></code></pre></figure>
+# Now all you need to do is push your gem the new task and provide your Gemcutter credentials
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">rake gemcutter:release</code></pre></figure>
+
+That's it, now my tmdb_party gem is "up on Gemcutter":http://gemcutter.org/gems/tmdb_party. On a side note, if you're not using "Jeweler":http://github.com/technicalpickles/jeweler/ to manage and release your gems you really should, it makes releasing a gem incredibly simple.
+
+Now go put your gems up on "Gemcutter":http://gemcutter.org/!
+
+<i>update:
+"Jon":http://github.com/maddox just reminded me that if you don't want to add the Jeweler task it's still just one simple command to release your gem:
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">gem push pkg/tmdb_party_0.4.0.gem</code></pre></figure>
+
+Boom! Released! Thanks for the reminder Jon!</i>
+
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">October 17, 2009 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#ruby'>ruby</a>, 
+  
+  
+  <a href='/tags#gem'>gem</a>, 
+  
+  
+  <a href='/tags#tmdb_party'>tmdb_party</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

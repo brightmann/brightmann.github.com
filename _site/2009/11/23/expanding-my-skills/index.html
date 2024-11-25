@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : Expanding my Skills </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>Expanding my Skills</h2>
+    In the last couple months I've been thinking a bit about expanding the skills I have into some different areas. I've been working with Ruby on Rails almost exclusively for over three years and have gotten to know the ins and outs pretty well. I love Ruby and Rails, but I'm getting that itch to play with something new. I've been playing around with iPhone development a bit (though I've been slacking) and find that to be really interesting, but I decided the other day to try something different to fill this need (I will continue to play with iPhone stuff, it's just too cool to let go).
+
+Javascript will be my next conquest. Writing Javascript with "jQuery":http://jquery.com/ to be exact. I've had my love for "jQuery":http://jquery.com/ reignited and it complements the other web development skills I already have. I'd like to think I'm already pretty good with "jQuery":http://jquery.com/, I've been using it for various projects for awhile now, but my goal is to learn it in and out; all the best practices and neat tricks as well as the limitations and how to overcome them.
+
+To do this I'm going to start out by trying my hand at writing a few "jQuery plugins":http://docs.jquery.com/Plugins/Authoring of my own and try to integrate jQuery into any work I might be doing. To start out I've been reading a few blogs and have come across a "really great plugin pattern":http://www.learningjquery.com/2007/10/a-plugin-development-pattern that I'm going to follow for most of my stuff.
+
+h3. jQuery Plugin Pattern: Giving it jQuery
+
+First thing we want to start with is giving our plugin access to jQuery. This sounds like a no brainer but you have to be careful since the jQuery helper method ($) can be redefined and therefore isn't guaranteed to exist. To overcome this the pattern below is usually used.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// plugin code here</span>
+<span class="p">})(</span><span class="nx">jQuery</span><span class="p">);</span></code></pre></figure>
+
+This might look a little scary, but all we're doing is defining a function that takes a parameter. We're then calling the function right away passing in jQuery. Now we can use $ in our plugin without worry!
+
+h3. Playing Nice: Returning jQuery
+
+When using a jQuery plugin there are a couple of things that users come to expect. The two main things is that the plugin should be able to work on an array of objects and at the end it should return the jQuery object to allow chain ability. Accomplishing this is very easy with the code below.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// define the plugin</span>
+    <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// iterate through the matched elements</span>
+        <span class="c1">// returning this at the end</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nf">each</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+          <span class="c1">// plugin logic here</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+<span class="p">})(</span><span class="nx">jQuery</span><span class="p">);</span></code></pre></figure>
+
+h3. Giving the User Control: Plugin Options and Defaults
+
+The next thing we're going to want to give our plugins is a way for the user to pass in options to override the defaults. I also like the way the "jQuery UI plugins":http://jqueryui.com/ give you public access to the defaults so that you can set them once instead of every time the plugin is called. "Learning jQuery":http://www.learningjquery.com/2007/10/a-plugin-development-pattern has some code to do just that and looks something like what I have below.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// define the plugin</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// extend the default options with those provided</span>
+    <span class="c1">// extending an empty object prevents overriding of </span>
+    <span class="c1">// our defaults object</span>
+    <span class="kd">var</span> <span class="nx">opts</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nf">extend</span><span class="p">({},</span> <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">defaults</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+    
+    <span class="c1">// ...</span>
+  <span class="p">};</span>
+  
+  <span class="c1">// plugin defaults</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">defaults</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">red</span><span class="dl">'</span>
+  <span class="p">};</span>
+<span class="p">})(</span><span class="nx">jQuery</span><span class="p">);</span></code></pre></figure>
+
+This code lets our plugin users do a couple interesting things. First thing is they can pass options to plugin like below.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nf">$</span><span class="p">(</span><span class="dl">'</span><span class="s1">h1</span><span class="dl">'</span><span class="p">).</span><span class="nf">template</span><span class="p">(</span> <span class="p">{</span> <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">black</span><span class="dl">'</span> <span class="p">}</span> <span class="p">)</span></code></pre></figure>
+
+What is more interesting is the fact that instead of having to pass the same options in every time they could set the defaults at the start and be done with it, only passing in options that differ from their own defaults.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">defaults</span><span class="p">.</span><span class="nx">color</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">black</span><span class="dl">'</span><span class="p">;</span>
+  <span class="nf">$</span><span class="p">(</span><span class="dl">'</span><span class="s1">h1</span><span class="dl">'</span><span class="p">).</span><span class="nf">template</span><span class="p">();</span> <span class="c1">// plugin default color is black</span>
+  
+  <span class="nf">$</span><span class="p">(</span><span class="dl">'</span><span class="s1">h1</span><span class="dl">'</span><span class="p">).</span><span class="nf">template</span><span class="p">(</span> <span class="p">{</span> <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">orange</span><span class="dl">'</span> <span class="p">}</span> <span class="p">);</span> <span class="c1">// override the defaults</span></code></pre></figure>
+
+This gives the users a lot of flexibility and helps them to keep their code nice and "DRY":http://en.wikipedia.org/wiki/Don%27t_repeat_yourself.
+
+h3. Giving the User Control: Exposing Public Functions
+
+Sometimes it makes sense to expose plugin functions to the user so that they can override the implementation with their own. This might not be needed for all plugins, but I think it would be useful for most. 
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="c1">// ...</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nf">each</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+      <span class="c1">// use the helper function</span>
+      <span class="kd">var</span> <span class="nx">something</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nf">helper</span><span class="p">();</span>
+      
+      <span class="c1">// plugin logic here</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  
+  <span class="c1">// public helper function that can be overridden by the user</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">helper</span> <span class="o">=</span> <span class="nf">function </span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// do something that helps</span>
+  <span class="p">};</span>
+  <span class="c1">// ...</span></code></pre></figure>
+
+This gives the user a lot of control over how the plugin behaves. Again, it doesn't make sense for all plugins but when sometimes it can be a real life saver. All the user has to do to provide their own implementation to the helper function is to redefine it like below.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">helper</span> <span class="o">=</span> <span class="nf">function </span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// do something different</span>
+  <span class="p">}</span></code></pre></figure>
+
+The big benefit to this that I see over having a callback is that you could save the original function and use it in your implementation, something like this.
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="kd">var</span> <span class="nx">helper</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">helper</span><span class="p">;</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">helper</span> <span class="o">=</span> <span class="nf">function </span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">results</span> <span class="o">=</span> <span class="nf">helper</span><span class="p">();</span>
+    <span class="c1">// do something different with the results</span>
+  <span class="p">}</span></code></pre></figure>
+
+This lets you build upon the original implementation if you want to, meaning less repeated code.
+
+h3. Wrapping Up
+
+Well, that pretty much does it for how I want my jQuery plugins to be structured. I've left out a bunch of stuff that beginners should probably take a look at, "these":http://www.learningjquery.com/2007/10/a-plugin-development-pattern "links":http://docs.jquery.com/Plugins/Authoring should help if you're interested.
+
+I've got the full template below and I've also put it up on "Github":http://github.com/jduff/jquery-plugin-template with a few more comments, feel free to fork it and send me updates.
+
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// define the plugin</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// extend the default options with those provided</span>
+    <span class="c1">// extending an empty object prevents overriding </span>
+    <span class="c1">// of our defaults object</span>
+    <span class="kd">var</span> <span class="nx">opts</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nf">extend</span><span class="p">({},</span> <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">defaults</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+    
+    <span class="c1">// iterate through the matched elements</span>
+    <span class="c1">// returning this at the end</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nf">each</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+      <span class="c1">// use the helper function</span>
+      <span class="kd">var</span> <span class="nx">something</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nf">helper</span><span class="p">();</span>
+      
+      <span class="c1">// plugin logic here</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  
+  <span class="c1">// public helper function that can be overridden by the user</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">helper</span> <span class="o">=</span> <span class="nf">function </span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// do something that helps</span>
+  <span class="p">};</span>
+  
+  <span class="c1">// plugin defaults</span>
+  <span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">defaults</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">red</span><span class="dl">'</span>
+  <span class="p">};</span>
+<span class="p">})(</span><span class="nx">jQuery</span><span class="p">);</span></code></pre></figure>
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">November 23, 2009 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#random'>random</a>, 
+  
+  
+  <a href='/tags#skills'>skills</a>, 
+  
+  
+  <a href='/tags#javascript'>javascript</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

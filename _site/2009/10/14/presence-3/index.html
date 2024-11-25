@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : Presence 3 </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>Presence 3</h2>
+    As I said in an "earlier post":http://jduff.github.com/2009/09/28/iphoneu/ I've been working on learning Objective-C, more specifically, programming for the iPhone. Well, I just finished off my latest Stanford iPhone assignment, Presence 3. As always you can find it up on github, there's a branch for "assignment 1":http://github.com/jduff/Presence/tree/v1, "assignment 2":http://github.com/jduff/Presence/tree/V2 and now "assignment 3":http://github.com/jduff/Presence/tree/V3.
+
+A couple of very key concepts were introduced for this assignment including threading, modal views and text input.
+
+h3. Threading
+
+Threading is one of the most important things to learn when doing iPhone programming. For this assignment the main idea was to have any network requests (loading any of the Twitter data) happen in another thread with a spinner showing that something is happening. There are a number of ways to move tasks off the main thread in Objective-C that abstract things away from using threads directly.
+
+So far I have found using NSOperations to be the easiest way to deal with threads. One way to create an NSOperation is by creating a subclass and using an instance of that object in your code. My image loading operation for Presence 3 is below.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">@interface</span> <span class="nc">ImageLoadingOperation</span> <span class="p">:</span> <span class="nc">NSOperation</span> <span class="p">{</span>
+	<span class="n">NSURL</span> <span class="o">*</span><span class="n">imageURL</span><span class="p">;</span>
+	<span class="n">id</span> <span class="n">target</span><span class="p">;</span>
+	<span class="n">SEL</span> <span class="n">selector</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">-</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="nf">initWithImageURL</span><span class="p">:(</span><span class="n">NSURL</span> <span class="o">*</span><span class="p">)</span><span class="nv">url</span> <span class="nf">target</span><span class="p">:(</span><span class="n">id</span><span class="p">)</span><span class="nv">theTarget</span> 
+                                   <span class="nf">selector</span><span class="p">:(</span><span class="n">SEL</span><span class="p">)</span><span class="nv">theSelector</span><span class="p">;</span>
+<span class="k">@end</span>
+
+<span class="k">@implementation</span> <span class="nc">ImageLoadingOperation</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="n">main</span> <span class="p">{</span>
+  <span class="n">NSData</span> <span class="o">*</span><span class="n">imageData</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSData</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">initWithContentsOfURL</span><span class="p">:</span><span class="n">imageURL</span><span class="p">];</span>
+  <span class="n">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIImage</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">initWithData</span><span class="p">:</span><span class="n">imageData</span><span class="p">];</span>
+  
+  <span class="k">if</span><span class="p">(</span><span class="n">image</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">){</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIImage</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">init</span><span class="p">];</span>
+  <span class="p">}</span>
+  <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSDictionary</span> <span class="nf">dictionaryWithObjectsAndKeys</span><span class="p">:</span><span class="n">image</span><span class="p">,</span> 
+                          <span class="s">@"image"</span><span class="p">,</span> <span class="n">imageURL</span><span class="p">,</span> <span class="s">@"url"</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
+	
+  <span class="p">[</span><span class="n">target</span> <span class="nf">performSelectorOnMainThread</span><span class="p">:</span><span class="n">selector</span> 
+                           <span class="nl">withObject:</span><span class="n">result</span> 
+                        <span class="nl">waitUntilDone:</span><span class="nb">NO</span><span class="p">];</span>
+	
+  <span class="p">[</span><span class="n">imageData</span> <span class="nf">release</span><span class="p">];</span>
+  <span class="p">[</span><span class="n">image</span> <span class="nf">release</span><span class="p">];</span>
+<span class="p">}</span>
+<span class="k">@end</span></code></pre></figure>
+
+To create an NSOperation subclass the first thing you need to do is override the main method, that's where the bulk of your code for the background thread will go. Once the work you need to do is finished you need to send the results back to the main thread with the method 'performSelectorOnMainThread:withObject:waitUntilDone:' passing the result and a boolean to say whether this thread should block until the selector is performed.
+
+Now that we have an operation defined we need to create an instance and use it. It's pretty much the same as using any other object, the only difference is that you need to add the operation to an operation queue and it deals with scheduling and all that.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="n">operationsQueue</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSOperationQueue</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">init</span><span class="p">];</span>
+
+<span class="n">ImageLoadingOperation</span> <span class="o">*</span><span class="n">operation</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ImageLoadingOperation</span> <span class="nf">alloc</span><span class="p">]</span> 
+  <span class="nl">initWithImageURL:</span> <span class="n">url</span>
+  <span class="nl">target:</span><span class="n">self</span>
+  <span class="nl">selector:</span><span class="k">@selector</span><span class="p">(</span><span class="nf">didFinishLoadingImageWithResult</span><span class="p">:)];</span>
+<span class="p">[</span><span class="n">operationsQueue</span> <span class="nf">addOperation</span><span class="p">:</span><span class="n">operation</span><span class="p">];</span>
+<span class="p">[</span><span class="n">operation</span> <span class="nf">release</span><span class="p">];</span></code></pre></figure>
+
+Everything here is pretty straight forward, you create an operations queue (which can be used for many different types of operations) and then add the operation instance to the queue to be executed.
+
+Another way to use operations for threading is by using the NSInvocationOperation class. It's a implementation of NSOperation that you can use instead of having to subclass it yourself. All you have to do is remember to call 'performSelectorOnMainThread:withObject:waitUntilDone:' in the method given as the selector parameter.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="n">NSInvocationOperation</span> <span class="o">*</span><span class="n">operation</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSInvocationOperation</span> <span class="nf">alloc</span><span class="p">]</span>
+  <span class="nl">initWithTarget:</span><span class="n">self</span>
+  <span class="nl">selector:</span><span class="k">@selector</span><span class="p">(</span><span class="nf">sendMessage</span><span class="p">:)</span>
+  <span class="nl">object:</span><span class="n">text</span><span class="p">];</span>
+
+<span class="p">[</span><span class="n">operationsQueue</span> <span class="nf">addOperation</span><span class="p">:</span><span class="n">operation</span><span class="p">];</span>
+<span class="p">[</span><span class="n">operation</span> <span class="nf">release</span><span class="p">];</span></code></pre></figure>
+
+h3. Modal Views
+
+Modal Views are fairly common on the iPhone, it's a view that can be popped up in the stack and has to be dismissed before getting back to any previous interactions. Think of when you're composing an email or adding a contact; the view that shows when doing those actions is presented modally.
+
+Any view controller (or navigation controller since it's a subclass) can be presented modally with one simple method call.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="p">[</span><span class="n">self</span> <span class="nf">presentModalViewController</span><span class="p">:</span><span class="n">composeView</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span></code></pre></figure>
+
+This will show the 'composeView' which has to be dismissed before the user can continue whatever they were previously doing. Dismissing the view is best done by delegating back to the view or controller that presented it.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">@implementation</span> <span class="nc">ComposeViewController</span>
+
+<span class="k">-</span><span class="p">(</span><span class="n">IBAction</span><span class="p">)</span> <span class="nf">cancelButtonPressed</span><span class="p">:(</span><span class="n">id</span><span class="p">)</span><span class="nv">sender</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">([</span><span class="n">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nf">respondsToSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">composeViewDidFinish</span><span class="p">)])</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nf">composeViewDidFinish</span><span class="p">];</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+When the composeView was created I set the creator as the delegate, then when the cancel button is pressed I can tell the delegate that the composeView is finished and it can decide to dismiss the view or do something else. One simple method call in the delegate dismisses the modal view.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="p">[</span><span class="n">self</span> <span class="nf">dismissModalViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span></code></pre></figure>
+
+h3. Text Input
+
+Handling text input is incredibly easy since the iPhone handles most of the annoying work for you. You don't have to worry about calling up the keyboard or anything like that, when a keyboard is needed the framework knows and displays it for you. There's a lot of customization that you can do through Interface Builder or code, all of which is pretty straight forward.
+
+If you do need to interact with what's happening with the keyboard there are some optional delegate methods that you can implement. Just set a class as the inputs' delegate and implement the methods you want.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="n">BOOL</span><span class="p">)</span><span class="nf">textField</span><span class="p">:(</span><span class="n">UITextField</span> <span class="o">*</span><span class="p">)</span><span class="nv">textField</span>
+    <span class="nf">shouldChangeCharactersInRange</span><span class="p">:(</span><span class="n">NSRange</span><span class="p">)</span><span class="nv">range</span> 
+    <span class="nf">replacementString</span><span class="p">:(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">string</span> <span class="p">{</span>
+    
+  <span class="n">NSString</span> <span class="o">*</span><span class="n">testString</span> <span class="o">=</span> <span class="p">[</span><span class="n">textField</span><span class="p">.</span><span class="n">text</span> 
+                          <span class="nl">stringByReplacingCharactersInRange:</span><span class="n">range</span> <span class="nf">withString</span><span class="p">:</span><span class="n">string</span><span class="p">];</span>
+  <span class="n">charactersRemaining</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nf">stringWithFormat</span><span class="p">:</span><span class="s">@"%d"</span><span class="p">,</span> <span class="p">(</span><span class="mi">140</span><span class="o">-</span><span class="p">[</span><span class="n">testString</span> <span class="nf">length</span><span class="p">])];</span>
+
+  <span class="k">if</span><span class="p">(</span> <span class="p">[</span><span class="n">testString</span> <span class="nf">length</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">([</span><span class="n">testString</span> <span class="nf">length</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">140</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">sendButton</span><span class="p">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">sendButton</span><span class="p">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>  
+<span class="p">}</span></code></pre></figure>
+
+This first method gives you a bunch of information about the current keyboard interaction, like what string is going to be added and where in the range of the string it's going to be placed. This lets you filter out characters or modify what is happening with the input. A boolean is returned to say when the input should take place or not. In my case I wanted to enable or disable another button depending on how much text was going to be in the input. By using the 'stringByReplacingCharactersInRange' method on the current input text and the string that was being passed in the resulting text length can be found. Thanks to Ben Lachman who "helped me out with this":http://stackoverflow.com/questions/1561208/iphone-objective-c-only-enable-a-button-if-nstextfield-is-not-blank.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="n">BOOL</span><span class="p">)</span><span class="nf">textFieldShouldReturn</span><span class="p">:(</span><span class="n">UITextField</span> <span class="o">*</span><span class="p">)</span><span class="nv">textField</span><span class="p">{</span>
+  <span class="k">if</span> <span class="p">([</span><span class="n">textField</span><span class="p">.</span><span class="n">text</span> <span class="nf">length</span><span class="p">]</span><span class="o">&lt;=</span><span class="mi">140</span><span class="p">)</span> <span class="p">{</span>
+  	<span class="p">[</span><span class="n">textField</span> <span class="nf">resignFirstResponder</span><span class="p">];</span>
+	
+  	<span class="k">if</span><span class="p">([</span><span class="n">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nf">respondsToSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nf">composeViewDidFinish</span><span class="p">:</span><span class="n">withText</span><span class="o">:</span><span class="p">)])</span> <span class="p">{</span>
+  		<span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nf">composeViewDidFinish</span><span class="p">:</span><span class="n">self</span> <span class="nf">withText</span><span class="p">:</span><span class="n">textField</span><span class="p">.</span><span class="n">text</span><span class="p">];</span>
+  	<span class="p">}</span>
+  	<span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>		
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  	<span class="k">return</span> <span class="nb">NO</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+This next method lets you decide what should happen when return (or send, or go) is pressed. You can call other methods here and return a boolean saying whether the keyboard should return or not. Notice that I am letting the delegate decide what to do with the result.
+
+h3. Conclusion
+
+Well, there was a lot going on in this version of Presence but hopefully I didn't cut things down too much in this blog post. The most interesting bit is the threading, it's also the most useful. If you want some more details just let me know or take a look at my version of "Presence 3":http://github.com/jduff/Presence/tree/V3 yourself.
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">October 14, 2009 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#objective-c'>objective-c</a>, 
+  
+  
+  <a href='/tags#iphone'>iphone</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

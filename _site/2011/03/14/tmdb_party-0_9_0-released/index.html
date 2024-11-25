@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : tmdb_party 0.9.0 Released </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>tmdb_party 0.9.0 Released</h2>
+    Over the weekend I spent a little bit of time cleaning up some of the code and adding a few new features to my gem gem for talking to "themoviedb.org":http://www.themoviedb.org/, "tmdb_party":https://github.com/jduff/tmdb_party. If you've never heard of themoviedb.org you should really check it out. It's a lot like "IMDB":http://www.imdb.com/ but it is completely user generated and has an "open api":http://api.themoviedb.org/2.1 that anyone can use.
+
+So, what's new in 0.9.0? Well, under the covers I did a "bunch":https://github.com/jduff/tmdb_party/commit/92a4700e83ca34035ce03e65814103135e020f5a of "house":https://github.com/jduff/tmdb_party/commit/bfb1778adae53ad21966bfa3a5cddc6e6f640d9a "cleaning":https://github.com/jduff/tmdb_party/commit/87e6d5ee58fe36255cb2f1ab7dc3fce06d97b5f6, moved some files around and "removed some useless extensions":https://github.com/jduff/tmdb_party/commit/f76cfaf3903341413524f5ea5353676ad8c53576 to core classes that were used internally and just cluttering up your classes. Nothing too special there, but should make the code a lot easier to understand and maintain.
+
+I also managed to implement two new features that I'm pretty happy about. The first one is based on some work I noticed in forks by "willchang":https://github.com/willchang and "razielgn":https://github.com/razielgn. They had both implemented the "Movie.browse":http://api.themoviedb.org/2.1/methods/Movie.browse method from the api, but because of my recent changes I couldn't pull either of them very cleanly. Since it was a pretty straightforward change I just added it myself, but kudos to those guys for making me realize it was missing. Here's a little example of what you can do with this new method:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">tmdb</span> <span class="o">=</span> <span class="no">TMDBParty</span><span class="o">::</span><span class="no">Base</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'key'</span><span class="p">)</span>
+<span class="n">tmdb</span><span class="p">.</span><span class="nf">browse</span><span class="p">({</span><span class="ss">:query</span><span class="o">=&gt;</span><span class="s1">'Transformers'</span><span class="p">,</span> <span class="ss">:rating_min</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">,</span> <span class="ss">:min_votes</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">})</span></code></pre></figure>
+
+There's a number of different options, all of which can be found in the "api docs":http://api.themoviedb.org/2.1/methods/Movie.browse.
+
+The other feature I added is something I find really cool. This comes from talking to "John Tajima":http://twitter.com/#!/redronin who told me about this cool idea of being able to generate a unique hash from a video file which you can use to identify the video. It turns out that "themoviedb.org":http://www.themoviedb.org/ api already supports searching based on the file hashes when using the "Media.getInfo":http://api.themoviedb.org/2.1/methods/Media.getInfo method. So I went ahead and grabbed the "hashing algorithm":http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes, made a few changes and "here we are":https://github.com/jduff/tmdb_party/commit/e1a67bdbd1f003cbb590f6ca9bbfec639616566d. Here's how we use it:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">tmdb</span> <span class="o">=</span> <span class="no">TMDBParty</span><span class="o">::</span><span class="no">Base</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'key'</span><span class="p">)</span>
+<span class="no">File</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="s1">'transformers.avi'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
+  <span class="n">info</span> <span class="o">=</span> <span class="n">tmdb</span><span class="p">.</span><span class="nf">get_file_info</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<span class="k">end</span></code></pre></figure>
+
+This will generate the hash for the given file and use that in the query to "Media.getInfo":http://api.themoviedb.org/2.1/methods/Media.getInfo returning all the information for whatever movie that might be. Now you can easily figure out what all those randomly named files on your disk really are.
+
+The last thing I wanted to point out was some work that "Mange":https://github.com/Mange did awhile back adding support for retrieving results in different languages, lots more tests, person search and whole bunch more. Almost all of the methods take an optional final parameter for the language you want your results in:
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">tmdb</span> <span class="o">=</span> <span class="no">TMDBParty</span><span class="o">::</span><span class="no">Base</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'key'</span><span class="p">)</span>
+<span class="n">tmdb</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="s1">'transformers'</span><span class="p">,</span> <span class="s1">'fr'</span><span class="p">)</span></code></pre></figure>
+
+So that's all there is for now, thanks again to everyone who has contributed to this project with code, ideas, comments and everything else. If you need help getting started check out the "readme":https://github.com/jduff/tmdb_party or give me a shout and I'll gladly help you out.
+
+
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">March 14, 2011 
+   | 
+  <a href='/tags#ruby'>ruby</a>, 
+  
+  
+  <a href='/tags#gem'>gem</a>, 
+  
+  
+  <a href='/tags#movies'>movies</a>, 
+  
+  
+  <a href='/tags#tmdb_party'>tmdb_party</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+

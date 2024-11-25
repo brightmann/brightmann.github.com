@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>brite fisher : Building a SearchView with UISearchBar and UITableView </title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="verify-v1" content="fI45uNHehVNiO9Dt0Fp7XnsV0Z/ozBTkPoS6RlYAe50=" />
+    <META name="y_key" content="6c948e75a617b12d" />
+    <meta name='technorati-claim' content='8QN7CWNH8BSJ' />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <link href="http://feeds.feedburner.com/JohnDuffsBlog" type="application/atom+xml" rel="alternate" title="John Duff's blog" />
+</head>
+<body class=''>
+    <div id="top">
+    </div>
+    
+    <div id="content">
+    <div id="banner">
+        <h1><a href="http://brightmann.github.io">brite fisher</a></h1>
+        <!-- <h3>blog, ideas, photos, everything</h3> -->
+        
+        <form action="http://jduff.github.com/search/" id="cse-search-box">
+          <div>
+            <input type="hidden" name="cx" value="partner-pub-9891348073545685:87fahy-qwta" />
+            <input type="hidden" name="cof" value="FORID:11" />
+            <input type="hidden" name="ie" value="ISO-8859-1" />
+            <input type="text" name="q" size="31" />
+            <input type="submit" name="sa" value="Search" />
+          </div>
+        </form>
+        <div class='clear'></div>
+				<ul>
+					<li class='about'><a href='/about/'>About</a></li>
+					<li class='blog'><a href='/'>Blog</a></li>
+					<li class='archives'><a href='/tags/'>Archives</a></li>
+					<li class='resume'><a href='/resume/'>Resume</a></li>
+					<li style='float:right'><a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a></li>
+					<li style='float:none;' class='clear'></li>
+				</ul>
+        <script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=cse-search-box&amp;lang=en"></script>
+
+    </div>
+    
+    <div id="page">
+            <div id="main">
+                <div class="post">
+    <h2>Building a SearchView with UISearchBar and UITableView</h2>
+    h3. Background
+
+I've been working away on some iPhone programming lately and one of this first things I wanted to add to my app was a view for searching. What I wanted was to have a view that loads with the curser in the _UISearchBar_ ready to go and to only load the results when the user presses the 'Search' button. The rest of this blog post will go through putting all this together. At the end you will have a Search View very similar to the one in the "Flixster App":http://itunes.apple.com/gb/app/movies/id284235722?mt=8&ign-mpt=uo%3D2 and hopefully the knowhow to customize it further. If you would rather skip the step by step and jump right to the code "be my guest":http://jduff.github.com/2010/03/01/building-a-searchview-with-uisearchbar-and-uitableview/#-2010-03-01-building-a-searchview-with-uisearchbar-and-uitableview-full-code.
+
+h3. Search View Requirements
+
+# On load have the curser in the _UISearchBar_ ready for user input.
+# Search is only done once the 'Search' button is pressed.
+# When entering the query any previous results should not be clickable.
+
+Here's a look at what we're going to end up with: 
+
+p=. !{max-width:300px}/images/posts/2010-03-01/second_search.png(Search View Faded with Results)! 
+
+As a side note, if you're just looking for a simple type-ahead style search (kind of like what is used in the App Store or Contacts App) you might want to take a look at the Search Bar and Search Display Controller that can be added from Interface Builder. I found it super easy to use for the simple case just described, but very difficult to customize for anything else.
+
+h3. Getting Started
+
+I'll leave it up to you to do the basic setup for your app, I started with a Tab Bar application for mine but you can use whatever you like. I then created a Nib for the Search View and a corresponding SearchViewController.h/m that extends from _UIViewController_ (more on the code for these files later on). With that done we jump into Interface builder to drop our _UISearchBar_ and _UITableView_ into our Nib. It should look something like what I have here:
+
+p=. !{max-width:300px}/images/posts/2010-03-01/ib.png(Search View - Interface Builder)!
+
+Next up we want to add some _IBOutlets_ in our SearchViewController.h so that we can refer to the UI elements we just added from our code. I am going to make these properties as per the "Memory Management Guidelines":http://developer.apple.com/iphone/library/documentation/cocoa/Conceptual/MemoryMgmt/Articles/mmNibObjects.html from Apple. I'm also going to define a _NSMutableArray_ to hold the data to display in the _UITableView_.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="c1">//</span>
+<span class="c1">//  SearchViewController.h</span>
+<span class="c1">//</span>
+<span class="cp">#import &lt;UIKit/UIKit.h&gt;
+</span>
+<span class="k">@interface</span> <span class="nc">SearchViewController</span> <span class="p">:</span> <span class="nc">UIViewController</span><span class="p">{</span>
+    <span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">tableData</span><span class="p">;</span>
+    
+    <span class="n">UITableView</span> <span class="o">*</span><span class="n">theTableView</span><span class="p">;</span>
+    <span class="n">UISearchBar</span> <span class="o">*</span><span class="n">theSearchBar</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">@property</span><span class="p">(</span><span class="n">retain</span><span class="p">)</span> <span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">tableData</span><span class="p">;</span>
+
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">IBOutlet</span> <span class="n">UITableView</span> <span class="o">*</span><span class="n">theTableView</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">IBOutlet</span> <span class="n">UISearchBar</span> <span class="o">*</span><span class="n">theSearchBar</span><span class="p">;</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+If you didn't get XCode to generate this file for you make sure you include the import for UIKit.h.
+
+Now we will quickly jump back to Interface Builder and hook those IBOutlets up before we forget. You'll also want to make the _UISearchBar_ and _UITableView_ delegate to the _SearchViewController_ so that we can handle the callbacks there.
+
+With the Nib all set up lets make sure we synthesize those properties in SearchViewController.m and release the variables in our dealloc method.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="c1">//</span>
+<span class="c1">//  SearchViewController.m</span>
+<span class="c1">//</span>
+<span class="cp">#import "SearchViewController.h"
+</span>
+<span class="k">@implementation</span> <span class="nc">SearchViewController</span>
+<span class="k">@synthesize</span> <span class="n">tableData</span><span class="p">;</span>
+
+<span class="k">@synthesize</span> <span class="n">theSearchBar</span><span class="p">;</span>
+<span class="k">@synthesize</span> <span class="n">theTableView</span><span class="p">;</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidLoad</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">viewDidLoad</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="o">=</span><span class="p">[[</span><span class="n">NSMutableArray</span> <span class="nf">alloc</span><span class="p">]</span><span class="nf">init</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidAppear</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span><span class="nv">animated</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theSearchBar</span> <span class="nf">becomeFirstResponder</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">viewDidAppear</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">theTableView</span> <span class="nf">release</span><span class="p">],</span> <span class="n">theTableView</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">theSearchBar</span> <span class="nf">release</span><span class="p">],</span> <span class="n">theSearchBar</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">tableData</span> <span class="nf">dealloc</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">dealloc</span><span class="p">];</span>
+<span class="p">}</span>
+<span class="k">@end</span></code></pre></figure>
+
+I also snuck a little bit of code into _viewDidLoad_ and _ViewDidAppear_; the former just initializing the tableData _NSMutableArray_ and the later making our _UISearchBar_ first responder. Making it the first responder causes the _UISearchBar_ to get focus as soon as the view loads so that the user can start entering their query right away.
+
+That's a pretty good start, lets make sure it builds and see what we get when we run our app before going on.
+
+p=. !{max-width:300px}/images/posts/2010-03-01/viewLoaded.png(Search View Loaded)!
+
+h3. Implementing the Protocols
+
+We made the _SearchViewController_ the delegate for both the _UISearchBar_ and the _UITableView_ so are going to implement the _UISearchBarDelegate_ and _UITableViewDataSource_ Protocols. First we need to add the Protocols to the SearchViewController.h header file.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="c1">//</span>
+<span class="c1">//  SearchViewController.h</span>
+<span class="c1">//</span>
+<span class="cp">#import &lt;UIKit/UIKit.h&gt;
+</span>
+<span class="k">@interface</span> <span class="nc">SearchViewController</span> <span class="p">:</span> <span class="nc">UIViewController</span>
+ <span class="o">&lt;</span><span class="n">UISearchBarDelegate</span><span class="p">,</span> <span class="n">UITableViewDataSource</span><span class="o">&gt;</span> <span class="p">{</span>
+	<span class="c1">// Instance variables defined earlier</span>
+<span class="p">}</span>
+<span class="c1">// Properties defined earlier</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+Now we implement the methods in SearchViewController.m. There are a number of callback methods defined by the _UISearchBarDelegate_ Protocol but we're only interested in three: _searchBarTextDidBeginEditing_, _searchBarCancelButtonClicked_ and _searchBarSearchButtonClicked_.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarTextDidBeginEditing</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">setShowsCancelButton</span><span class="p">:</span><span class="nb">YES</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">allowsSelection</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+This method is called whenever the _UISearchBar_ gets focus. When this happens we want to show the 'Cancel' button (animated:YES makes it slide in nicely) and disable the _UITableView_.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarCancelButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="o">=</span><span class="s">@""</span><span class="p">;</span>
+    
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">setShowsCancelButton</span><span class="p">:</span><span class="nb">NO</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">resignFirstResponder</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">allowsSelection</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+When the 'Cancel' button is pressed we want to clear the _UISearchBar_ text and hide the button. We also want the _UISearchBar_ to resignFirstResponder status so that the keyboard hides and then enable the _UITableView_.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarSearchButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// You'll probably want to do this on another thread</span>
+    <span class="c1">// SomeService is just a dummy class representing some </span>
+    <span class="c1">// api that you are using to do the search</span>
+    <span class="n">NSArray</span> <span class="o">*</span><span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">SomeService</span> <span class="nf">doSearch</span><span class="p">:</span><span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">setShowsCancelButton</span><span class="p">:</span><span class="nb">NO</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">resignFirstResponder</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">allowsSelection</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+	
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">removeAllObjects</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">addObjectsFromArray</span><span class="p">:</span><span class="n">results</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> <span class="nf">reloadData</span><span class="p">];</span>
+<span class="p">}</span></code></pre></figure>
+
+The last _UISearchBarDelegate_ Protocol method is the callback for the 'Search' button being pressed. This is where we actually perform the search and add the results to the _UITableView_. The rest of this method implementation is the same as when the 'Cancel' button is pressed.
+
+Finally we need to implement the _UITableViewDataSource_ Protocol methods. I'm not going to go into a whole lot of detail here since there's "lots of info":http://www.iphonesdkarticles.com/2009/01/uitableview-indexed-table-view.html "out there":http://icodeblog.com/2008/07/26/iphone-programming-tutorial-hello-world/ on "implementing a _UITableView_":http://adeem.me/blog/2009/05/19/iphone-programming-tutorial-part-1-uitableview-using-nsarray/.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="n">NSInteger</span><span class="p">)</span><span class="nf">tableView</span><span class="p">:(</span><span class="n">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span>
+ <span class="nf">numberOfRowsInSection</span><span class="p">:(</span><span class="n">NSInteger</span><span class="p">)</span><span class="nv">section</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">tableData</span> <span class="nf">count</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="n">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView</span><span class="p">:(</span><span class="n">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span>
+         <span class="nf">cellForRowAtIndexPath</span><span class="p">:(</span><span class="n">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span> <span class="p">{</span>
+    <span class="k">static</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">MyIdentifier</span> <span class="o">=</span> <span class="s">@"SearchResult"</span><span class="p">;</span>
+    <span class="n">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span>
+     <span class="nl">dequeueReusableCellWithIdentifier:</span><span class="nf">MyIdentifier</span><span class="p">];</span>
+	
+    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">UITableViewCell</span> <span class="nf">alloc</span><span class="p">]</span> 
+         <span class="nl">initWithStyle:</span><span class="n">UITableViewCellStyleDefault</span> 
+         <span class="nl">reuseIdentifier:</span><span class="nf">MyIdentifier</span><span class="p">]</span> <span class="nf">autorelease</span><span class="p">];</span>
+    <span class="p">}</span>
+	
+    <span class="n">id</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">objectAtIndex</span><span class="p">:</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">name</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+We've done lots of work now and it's probably a good idea to make sure everything still builds. You should see something like this when you run the app:
+
+p=. !{max-width:300px}/images/posts/2010-03-01/results.png(Search View with Results)! 
+
+At this point we've hit all three marks in the requirements I outlined earlier and we could call it quits. We could, but I think we could do a little bit more to help make the _UITableView_ actually seem like it's disabled when you go to search.
+
+h3. Fading out the UITableView
+
+If you take another look at the "Flixster App":http://itunes.apple.com/gb/app/movies/id284235722?mt=8&ign-mpt=uo%3D2 or even the initial screenshot I have in this post you will notice that when you are in 'search mode' the background of the screen is faded black. This effect helps to show the user that the _UITableView_ is in fact disabled.
+
+To get this behaviour I add and remove another _UIView_ and adjust the opacity in an Animation so that in fades in smoothly. The first thing we need to do is create an instance variable and property for this _disableViewOverlay_ as I called it and initialize it when the view loads.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="cp">#import "SearchViewController.h"
+</span>
+<span class="k">@implementation</span> <span class="nc">SearchViewController</span>
+<span class="k">@synthesize</span> <span class="n">disableViewOverlay</span><span class="p">;</span>
+<span class="c1">// Additional variable synthesizes</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidLoad</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">viewDidLoad</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="o">=</span><span class="p">[[</span><span class="n">NSMutableArray</span> <span class="nf">alloc</span><span class="p">]</span><span class="nf">init</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIView</span> <span class="nf">alloc</span><span class="p">]</span>
+     <span class="nl">initWithFrame:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">44</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">320</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">416</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">)];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">backgroundColor</span><span class="o">=</span><span class="p">[</span><span class="n">UIColor</span> <span class="nf">blackColor</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+I'll leave it to you to figure out what to put in SearchViewController.m. Now that we have this _UIView_ all set up all we have to do is fade it in when the _UISearchBar_ gets focus. This was actually really easy to do, I just needed to add the _disableViewOverlay_ as a subview and then use _beginAnimations/commitAnimations_ for the fading.
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarTextDidBeginEditing</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// Existing code</span>
+    
+    <span class="c1">// Fading in the disableViewOverlay</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">view</span> <span class="nf">addSubview</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">UIView</span> <span class="nf">beginAnimations</span><span class="p">:</span><span class="s">@"FadeIn"</span> <span class="nf">context</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">UIView</span> <span class="nf">setAnimationDuration</span><span class="p">:</span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">UIView</span> <span class="nf">commitAnimations</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarCancelButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// Existing code</span>
+    
+    <span class="c1">// Removing the disableViewOverlay</span>
+    <span class="p">[</span><span class="n">disableViewOverlay</span> <span class="nf">removeFromSuperview</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarSearchButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// Existing code</span>
+    
+    <span class="c1">// Removing the disableViewOverlay</span>
+    <span class="p">[</span><span class="n">disableViewOverlay</span> <span class="nf">removeFromSuperview</span><span class="p">];</span>
+<span class="p">}</span></code></pre></figure>
+
+At the end of _searchBarTextDidBeginEditing_ we added the code to fade in the _disableViewOverlay_, then at the end of _searchBarCancelButtonClicked_ and searchBarSearchButtonClicked we remove the _disableViewOverlay_.
+
+If you've been following along you might notice a bit of a "code smell":http://en.wikipedia.org/wiki/Code_smell coming from these last three methods. There's a lot of code duplication which I don't really like so I actually re-factored these three methods and created another method that all of them can call. The resulting re-factored code looks like this:
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarTextDidBeginEditing</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarCancelButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="o">=</span><span class="s">@""</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarSearchButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// SomeService is just a dummy class representing some </span>
+    <span class="c1">// api that you are using to do the search</span>
+    <span class="n">NSArray</span> <span class="o">*</span><span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">SomeService</span> <span class="nf">doSearch</span><span class="p">:</span><span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">removeAllObjects</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">addObjectsFromArray</span><span class="p">:</span><span class="n">results</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> <span class="nf">reloadData</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBar</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="nf">activate</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span> <span class="n">active</span><span class="p">{</span>	
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">allowsSelection</span> <span class="o">=</span> <span class="o">!</span><span class="n">active</span><span class="p">;</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="o">!</span><span class="n">active</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">active</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">[</span><span class="n">disableViewOverlay</span> <span class="nf">removeFromSuperview</span><span class="p">];</span>
+        <span class="p">[</span><span class="n">searchBar</span> <span class="nf">resignFirstResponder</span><span class="p">];</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">view</span> <span class="nf">addSubview</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">];</span>
+		
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">beginAnimations</span><span class="p">:</span><span class="s">@"FadeIn"</span> <span class="nf">context</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">setAnimationDuration</span><span class="p">:</span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">];</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">commitAnimations</span><span class="p">];</span>
+		
+        <span class="c1">// probably not needed if you have a details view since you </span>
+        <span class="c1">// will go there on selection</span>
+        <span class="n">NSIndexPath</span> <span class="o">*</span><span class="n">selected</span> <span class="o">=</span> <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> 
+            <span class="nf">indexPathForSelectedRow</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">selected</span><span class="p">)</span> <span class="p">{</span>
+            <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> <span class="nf">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">selected</span> 
+                <span class="nl">animated:</span><span class="nb">NO</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">setShowsCancelButton</span><span class="p">:</span><span class="n">active</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+<span class="p">}</span></code></pre></figure>
+
+That cleans things up nicely. Now when you run the app you should have the main view fade out smoothly when you enter the _UISearchBar_ just like mine below:
+
+p=. !{max-width:300px}/images/posts/2010-03-01/second_search.png(Search View Faded with Results)! 
+
+h3. Conclusion
+
+There we have it, a nice Search View that you have full control over. I've included the full code with inline comments below, have at it! If you have any suggestions or feedback please "leave a comment":http://jduff.github.com/2010/03/01/building-a-searchview-with-uisearchbar-and-uitableview/#comments!
+
+<a id='-2010-03-01-building-a-searchview-with-uisearchbar-and-uitableview-full-code' ></a>
+SearchViewController.h
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="c1">//</span>
+<span class="c1">//  SearchViewController.h</span>
+<span class="c1">//</span>
+<span class="cp">#import &lt;UIKit/UIKit.h&gt;
+</span>
+<span class="k">@interface</span> <span class="nc">SearchViewController</span> <span class="p">:</span> <span class="nc">UIViewController</span>
+ <span class="o">&lt;</span><span class="n">UISearchBarDelegate</span><span class="p">,</span> <span class="n">UITableViewDataSource</span><span class="o">&gt;</span> <span class="p">{</span>
+	<span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">tableData</span><span class="p">;</span>
+	
+	<span class="n">UIView</span> <span class="o">*</span><span class="n">disableViewOverlay</span><span class="p">;</span>
+	
+	<span class="n">UITableView</span> <span class="o">*</span><span class="n">theTableView</span><span class="p">;</span>
+	<span class="n">UISearchBar</span> <span class="o">*</span><span class="n">theSearchBar</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">@property</span><span class="p">(</span><span class="n">retain</span><span class="p">)</span> <span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">tableData</span><span class="p">;</span>
+<span class="k">@property</span><span class="p">(</span><span class="n">retain</span><span class="p">)</span> <span class="n">UIView</span> <span class="o">*</span><span class="n">disableViewOverlay</span><span class="p">;</span>
+
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">IBOutlet</span> <span class="n">UITableView</span> <span class="o">*</span><span class="n">theTableView</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">IBOutlet</span> <span class="n">UISearchBar</span> <span class="o">*</span><span class="n">theSearchBar</span><span class="p">;</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBar</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="nf">activate</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span> <span class="n">active</span><span class="p">;</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+
+SearchViewController.m
+
+
+<figure class="highlight"><pre><code class="language-objectivec" data-lang="objectivec"><span class="c1">//</span>
+<span class="c1">//  SearchViewController.m</span>
+<span class="c1">//</span>
+<span class="cp">#import "SearchViewController.h"
+</span>
+<span class="k">@implementation</span> <span class="nc">SearchViewController</span>
+<span class="k">@synthesize</span> <span class="n">tableData</span><span class="p">;</span>
+<span class="k">@synthesize</span> <span class="n">disableViewOverlay</span><span class="p">;</span>
+<span class="k">@synthesize</span> <span class="n">theSearchBar</span><span class="p">;</span>
+<span class="k">@synthesize</span> <span class="n">theTableView</span><span class="p">;</span>
+
+
+<span class="c1">// Initialize tableData and disabledViewOverlay </span>
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidLoad</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">viewDidLoad</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="o">=</span><span class="p">[[</span><span class="n">NSMutableArray</span> <span class="nf">alloc</span><span class="p">]</span><span class="nf">init</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIView</span> <span class="nf">alloc</span><span class="p">]</span>
+     <span class="nl">initWithFrame:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">44</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">320</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">,</span><span class="mi">416</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">)];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">backgroundColor</span><span class="o">=</span><span class="p">[</span><span class="n">UIColor</span> <span class="nf">blackColor</span><span class="p">];</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// Since this view is only for searching give the UISearchBar </span>
+<span class="c1">// focus right away</span>
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidAppear</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span><span class="nv">animated</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theSearchBar</span> <span class="nf">becomeFirstResponder</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">viewDidAppear</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="cp">#pragma mark -
+#pragma mark UISearchBarDelegate Methods
+</span>
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBar</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span>
+    <span class="nf">textDidChange</span><span class="p">:(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchText</span> <span class="p">{</span>
+  <span class="c1">// We don't want to do anything until the user clicks </span>
+  <span class="c1">// the 'Search' button.</span>
+  <span class="c1">// If you wanted to display results as the user types </span>
+  <span class="c1">// you would do that here.</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarTextDidBeginEditing</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// searchBarTextDidBeginEditing is called whenever </span>
+    <span class="c1">// focus is given to the UISearchBar</span>
+    <span class="c1">// call our activate method so that we can do some </span>
+    <span class="c1">// additional things when the UISearchBar shows.</span>
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarTextDidEndEditing</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// searchBarTextDidEndEditing is fired whenever the </span>
+    <span class="c1">// UISearchBar loses focus</span>
+    <span class="c1">// We don't need to do anything here.</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarCancelButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// Clear the search text</span>
+    <span class="c1">// Deactivate the UISearchBar</span>
+    <span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="o">=</span><span class="s">@""</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBarSearchButtonClicked</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="p">{</span>
+    <span class="c1">// Do the search and show the results in tableview</span>
+    <span class="c1">// Deactivate the UISearchBar</span>
+	
+    <span class="c1">// You'll probably want to do this on another thread</span>
+    <span class="c1">// SomeService is just a dummy class representing some </span>
+    <span class="c1">// api that you are using to do the search</span>
+    <span class="n">NSArray</span> <span class="o">*</span><span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">SomeService</span> <span class="nf">doSearch</span><span class="p">:</span><span class="n">searchBar</span><span class="p">.</span><span class="n">text</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">self</span> <span class="nf">searchBar</span><span class="p">:</span><span class="n">searchBar</span> <span class="nf">activate</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+	
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">removeAllObjects</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">addObjectsFromArray</span><span class="p">:</span><span class="n">results</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> <span class="nf">reloadData</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="c1">// We call this when we want to activate/deactivate the UISearchBar</span>
+<span class="c1">// Depending on active (YES/NO) we disable/enable selection and </span>
+<span class="c1">// scrolling on the UITableView</span>
+<span class="c1">// Show/Hide the UISearchBar Cancel button</span>
+<span class="c1">// Fade the screen In/Out with the disableViewOverlay and </span>
+<span class="c1">// simple Animations</span>
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">searchBar</span><span class="p">:(</span><span class="n">UISearchBar</span> <span class="o">*</span><span class="p">)</span><span class="nv">searchBar</span> <span class="nf">activate</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span> <span class="n">active</span><span class="p">{</span>	
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">allowsSelection</span> <span class="o">=</span> <span class="o">!</span><span class="n">active</span><span class="p">;</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">theTableView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="o">!</span><span class="n">active</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">active</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">[</span><span class="n">disableViewOverlay</span> <span class="nf">removeFromSuperview</span><span class="p">];</span>
+        <span class="p">[</span><span class="n">searchBar</span> <span class="nf">resignFirstResponder</span><span class="p">];</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">view</span> <span class="nf">addSubview</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">];</span>
+		
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">beginAnimations</span><span class="p">:</span><span class="s">@"FadeIn"</span> <span class="nf">context</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">setAnimationDuration</span><span class="p">:</span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">];</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">disableViewOverlay</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">UIView</span> <span class="nf">commitAnimations</span><span class="p">];</span>
+		
+        <span class="c1">// probably not needed if you have a details view since you </span>
+        <span class="c1">// will go there on selection</span>
+        <span class="n">NSIndexPath</span> <span class="o">*</span><span class="n">selected</span> <span class="o">=</span> <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> 
+            <span class="nf">indexPathForSelectedRow</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">selected</span><span class="p">)</span> <span class="p">{</span>
+            <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">theTableView</span> <span class="nf">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">selected</span> 
+                <span class="nl">animated:</span><span class="nb">NO</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="p">[</span><span class="n">searchBar</span> <span class="nf">setShowsCancelButton</span><span class="p">:</span><span class="n">active</span> <span class="nf">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+<span class="p">}</span>
+
+
+<span class="cp">#pragma mark -
+#pragma mark UITableViewDataSource Methods
+</span>
+<span class="k">-</span> <span class="p">(</span><span class="n">NSInteger</span><span class="p">)</span><span class="nf">tableView</span><span class="p">:(</span><span class="n">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span>
+ <span class="nf">numberOfRowsInSection</span><span class="p">:(</span><span class="n">NSInteger</span><span class="p">)</span><span class="nv">section</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">tableData</span> <span class="nf">count</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="n">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView</span><span class="p">:(</span><span class="n">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span>
+         <span class="nf">cellForRowAtIndexPath</span><span class="p">:(</span><span class="n">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span> <span class="p">{</span>
+    <span class="k">static</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">MyIdentifier</span> <span class="o">=</span> <span class="s">@"SearchResult"</span><span class="p">;</span>
+    <span class="n">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span>
+     <span class="nl">dequeueReusableCellWithIdentifier:</span><span class="nf">MyIdentifier</span><span class="p">];</span>
+	
+    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">UITableViewCell</span> <span class="nf">alloc</span><span class="p">]</span> 
+         <span class="nl">initWithStyle:</span><span class="n">UITableViewCellStyleDefault</span> 
+         <span class="nl">reuseIdentifier:</span><span class="nf">MyIdentifier</span><span class="p">]</span> <span class="nf">autorelease</span><span class="p">];</span>
+    <span class="p">}</span>
+	
+    <span class="n">id</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">tableData</span> <span class="nf">objectAtIndex</span><span class="p">:</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">name</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cp">#pragma mark -
+#pragma mark Memory Management Methods
+</span>
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">didReceiveMemoryWarning</span> <span class="p">{</span>
+    <span class="c1">// Releases the view if it doesn't have a superview.</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">didReceiveMemoryWarning</span><span class="p">];</span>	
+    <span class="c1">// Release any cached data, images, etc that aren't in use.</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidUnload</span> <span class="p">{</span>
+    <span class="c1">// Release any retained subviews of the main view.</span>
+    <span class="c1">// e.g. self.myOutlet = nil;</span>
+<span class="p">}</span>
+
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span> <span class="p">{</span>
+    <span class="p">[</span><span class="n">theTableView</span> <span class="nf">release</span><span class="p">],</span> <span class="n">theTableView</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">theSearchBar</span> <span class="nf">release</span><span class="p">],</span> <span class="n">theSearchBar</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+    <span class="p">[</span><span class="n">tableData</span> <span class="nf">dealloc</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">disableViewOverlay</span> <span class="nf">dealloc</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">super</span> <span class="nf">dealloc</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+</div>
+
+<div id="related">
+  <h3>Related Posts</h3>
+  <ul class="posts">
+    
+      <li><span>02 Nov 2024</span> &raquo; <a href="/2024/11/02/how-are-u/">你还好吗</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/2024/11/01/%E5%A3%B0%E5%A3%B0%E6%85%A2/">声声慢</a></li>
+    
+      <li><span>01 Nov 2024</span> &raquo; <a href="/misc/2024/11/01/%E8%B7%AF%E8%80%83%E6%B3%A8%E6%84%8F%E7%82%B9/">路考注意点</a></li>
+    
+  </ul>
+</div>
+
+<small class="meta">March 01, 2010 
+   | 
+  <a href='/tags#programming'>programming</a>, 
+  
+  
+  <a href='/tags#iphone'>iphone</a>, 
+  
+  
+  <a href='/tags#objective-c'>objective-c</a>, 
+  
+  
+  <a href='/tags#uisearchbar'>uisearchbar</a>, 
+  
+  
+  <a href='/tags#uitableview'>uitableview</a>
+   </small>
+
+<div id="comments">
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript" src="http://disqus.com/forums/johnduff/embed.js"></script>
+    <noscript><a href="http://johnduff.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+            </div>
+            <div id="sidebar">
+              <br />
+							<h3>Around the Web</h3>
+							<ul id="links">
+									<li class="github"><a href="http://github.com/jduff" rel='me' class='url'>GitHub Profile</a></li>
+								  <li class="twitter"><a href="http://twitter.com/johnduff" rel="me" class="url">Twitter Feed</a></li>
+								  <li class="linkedin"><a href="http://www.linkedin.com/in/johnduff" rel="me" class="url">LinkedIn Profile</a></li>
+									<li class="reader"><a href="http://www.google.com/reader/shared/17682955537280407457" rel="me" class="url">Reader Feed</a></li>
+								  <li class="facebook"><a href="http://www.facebook.com/duff.john" rel="me" class="url">Facebook Profile</a></li>
+							</ul>
+							
+							
+              <div id="twitter_div">
+                  
+              <h3>Twitter Updates</h3>
+              <ul id="twitter_update_list"></ul>
+              <!-- <a href="http://twitter.com/johnduff" id="twitter-link" style="display:block;text-align:right;">follow me on Twitter</a> -->
+              </div>
+              <br />
+              <script type="text/javascript"><!--
+              google_ad_client = "pub-9891348073545685";
+              /* jduff.github.com square 250 */
+              google_ad_slot = "6433109702";
+              google_ad_width = 250;
+              google_ad_height = 250;
+              //-- 
+              </script>
+              <script type="text/javascript"
+              src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+              </script>
+              
+							<!--
+              <div id="dsq-recentcomments" class="dsq-widget">
+                <h3 class="dsq-widget-title">Recent Comments</h3>
+                <script type="text/javascript" src="http://disqus.com/forums/johnduff/recent_comments_widget.js?num_items=5&avatar_size=32"></script>
+              </div>
+              <a href="http://disqus.com">Powered by Disqus</a>-->
+              
+            </div>
+        <div id="license">
+        </div>
+        
+    </div>
+</div>
+
+
+    <div id="bottom">
+	      <a href="/about/">About</a> |
+        <a href="http://jduff.github.com">Blog</a> |
+        <a href="/tags/">Archives</a> |
+				<a href="/resume/">Resume</a> |
+        <a href="http://feeds.feedburner.com/JohnDuffsBlog">RSS</a>
+    </div>
+    
+    <!-- Google Analytics Code -->    
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-9947336-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script');
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 
+            'http://www') + '.google-analytics.com/ga.js';
+        ga.setAttribute('async', 'true');
+        document.documentElement.firstChild.appendChild(ga);
+      })();
+
+    </script>
+    
+    <!-- Twitter Badge Code -->
+    <script type="text/javascript" src="http://twitter.com/javascripts/blogger.js"></script>
+    <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/johnduff.json?callback=twitterCallback2&amp;count=5"></script>
+
+</body>
+</html>
+
