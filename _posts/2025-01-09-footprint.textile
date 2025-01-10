@@ -1,0 +1,9 @@
+---
+layout: post
+title: 脚印
+date: 2025-01-09T22:27:00
+tags: [music]
+---
+
+<iframe width="656" height="369" src="https://www.youtube.com/embed/G_FAjtthvlc" title="脚印" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
