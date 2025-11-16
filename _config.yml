@@ -1,2 +1,4 @@
 permalink: pretty
 paginate: 5
+plugins: [jekyll-paginate]
+
